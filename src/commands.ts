@@ -1,57 +1,23 @@
-import { Message, MessageEmbed, Guild, EmbedField } from "discord.js";
+import { Message, MessageEmbed, EmbedField } from "discord.js";
 import Session from "./session";
 import c from "chalk";
+import ServerStat from "./types/serverStat";
+import DefaultMessageTypes from "./types/defaultMessageTypes";
+import CommandExitMessage from "./types/commandExitMessage";
+import { commands } from "./help";
 
-
-class MessageType {
-    readonly color: string; // Color of Embed
-    readonly emoji: string; // Emoji that goes after title
-
-    constructor(emoji: string, color: string) {
-        this.emoji = emoji;
-        this.color = color;
-    }
-}
-
-class ServerStat {
-    membersCount: number; // All members in given server
-    membersListenning: number = 0; // Members are listenning to the bot
-    region: string; // Region of a server 
-    name: string; // Name of a server
-
-    constructor(membersCount: number, region: string, name: string, membersListenning: number) {
-        this.membersCount = membersCount;
-        this.membersListenning = membersListenning;
-        this.region = region;
-        this.name = name;
-    }
-}
-
-const DefaultMessageTypes =  {
-    success: new MessageType("✅","#3BF23B"),
-
-    warn: new MessageType("⚠️", "#FFFF00"),
-
-    error: new MessageType("🔴", "#FF3356"),
-
-    info: new MessageType("ℹ️", "#14AACC"),
-}
-
-interface CommandExitMessage {
-    title: string; // Title of message
-    text: string; // Main text
-    type: MessageType; // Type, e.g success
-    fields?: EmbedField[]; // Optional fields in messsage
-
-} 
+const helpMessage: CommandExitMessage = {
+    type: DefaultMessageTypes.info,
+    title: "Bot Help",
+    text: "Bot for playing radio in voice chat.",
+    fields: commands,
+};
 
 export default class {
 
     private prefix: string; // Prefix of commands that need to be processed by bot
-    private errorPrefix: string = "[Commands Manager Error]"; // Prefix for error logs
 
     private sessions: Session[] = []; // Sessions of bot streams
-
 
     constructor(pref: string) {
         this.prefix = pref;
@@ -63,6 +29,7 @@ export default class {
         return this.sessions.find(s => s.guildId == guidId);
     }
 
+    // Find session by guild id and stop it.
     private  stopSession(guildId: string): void {
         let sessionToStop = this.findSession(guildId);
         sessionToStop?.stop();
@@ -85,8 +52,7 @@ export default class {
                     serverListenners = session.channel.members.size - 1; 
                 }
             }
-
-            peopleListenning += peopleListenning;
+            peopleListenning += serverListenners;
 
             // Remove one member in 1st param since it's bot
             servers.push(new ServerStat(server.memberCount - 1, server.region, server.name, serverListenners));
@@ -97,10 +63,11 @@ export default class {
     
     async executeWithArgs(args: string[], msg: Message, ): Promise<CommandExitMessage | CommandExitMessage[]> {
 
+        // Exit if user is not in chat.
         if (!msg.member?.guild) {            
             return  {
                 title: "Failed to join the chat.",
-                text: "You have to be in chat before you can use the bot.",
+                text: "You have to be in server before you can use the bot.",
                 type: DefaultMessageTypes.error
             }
         }
@@ -108,67 +75,82 @@ export default class {
         // TODO: Make help embed message
         switch (args[0]) {
 
+            case "help":
+            case "h": {
+                return helpMessage;
+            }
             // Mute volume on bot
             case "mute":
             case "m": {
-                let mutedSession = this.findSession(msg.member.guild.id);
+                let sessionToMute = this.findSession(msg.member.guild.id);
 
-                if (mutedSession == undefined) {
+                if (!sessionToMute) {
                     return  {
                         title: `No streams to mute.`,
                         text: "Radio Bot is not playing stream anywhere.",
                         type: DefaultMessageTypes.warn
-                    }
+                    };
                 }
-                mutedSession.updateVolume(0);
+                sessionToMute.updateVolume(0);
                 
                 return  {
-                    title: `Muted in ${mutedSession.channel.name}`,
+                    title: `Muted in ${sessionToMute.channel.name}`,
                     text: "Stream is muted!",
                     type: DefaultMessageTypes.success
-                }
+                };
             }
             // Set volume
             case "vol": 
             case "volume":
             case "v": {
-                let sessionToUpdate = this.findSession(msg.member.guild.id);
+                let session = this.findSession(msg.member.guild.id);
 
-                if (sessionToUpdate == undefined) {
+                if (!session) {
                     return {
                         title: `No stream to update volume!`,
                         text: "Bot is not playing anywhere.",
                         type: DefaultMessageTypes.warn
-                    }
+                    };
+                }
+                if (!args[1]) {
+                    let vol = session.getVolume();
+                    return {
+                        title: `Volume: ${vol * 100}`,
+                        text: `To change volume use "${this.prefix} vol <1-100>`,
+                        type: DefaultMessageTypes.info
+                    };
                 }
                 // Set to maximum
                 if (args[1] == "max") {
-                    sessionToUpdate.updateVolume(1);
+                    session.updateVolume(1);
                     return  {
                         title: `Volume set to max!`,
                         text: "Bot is playing music as loud as possible!",
                         type: DefaultMessageTypes.success
-                    }
+                    };
                 }
                 else {
-                    let vol = parseFloat(args[1]);
-
-                    //  Failed to parse volume number
-                    if (Number.isNaN(vol)) {
+                    // Not numeric value provided
+                    if (!RegExp(/^\d+$/).test(args[1])) {
                         return  {
                             title: `Use integers!`,
                             text: "Use 0-100 to set the volume.",
                             type: DefaultMessageTypes.error
                         }
                     }
+
+                    let vol = parseInt(args[1]);
+
                     // Converting from percents to float
                     vol = Math.abs(vol / 100);
                     
-                    sessionToUpdate.updateVolume(vol);
+                    session.updateVolume(vol);
+
+                    let updated = vol > 1 ? "max" : vol * 100;
 
                     return  {
                         title: `Volume is updated.`,
-                        text: `Volume set to ${vol * 100}`,
+                        text: `Volume set to ${updated}`,
                         type: DefaultMessageTypes.success
                     }
                 }
@@ -197,13 +179,12 @@ export default class {
                     }
 
                     try {
-
                         let createdSession = new Session(msg.member.guild.id, msg.member.voice.channel);
                         this.sessions.push(createdSession);
 
                         return {
                             title: `Joinded.`,
-                            text: `Joined in channed ${createdSession.channel.name}.`,
+                            text: `Joined in channel ${createdSession.channel.name}.`,
                             type: DefaultMessageTypes.success
                         }
                     } catch (e) {
@@ -228,10 +209,10 @@ export default class {
             // Stats about servers and channels
             case "stat": {
 
-                let homeServer = process.env.home_server;
-                let homeChannel = process.env.home_channel;
+                let homeServerId = process.env.home_server; 
+                let homeChannelId = process.env.home_channel;
 
-                if (!homeChannel || !homeServer) {
+                if (!homeChannelId || !homeServerId) {
                     return {
                         title: `Not configured.`,
                         text: `Please, specify ids of home server and home channel in configuration file to see stats.`,
@@ -239,13 +220,13 @@ export default class {
                     }
                 }
 
-                if (msg.member.guild.id == homeServer && msg.channel.id == homeChannel) {
+                if (msg.member.guild.id == homeServerId && msg.channel.id == homeChannelId) {
 
                     const stats = this.getStats(msg);
+                    const serverFields: EmbedField[] = []; // One field in embed message for each server
 
                     let totalMembersCount = 0;
                     let totalListenningCount = 0;
-                    const serverFields: EmbedField[] = [];
 
                     for (let server of stats) {
 
@@ -263,10 +244,9 @@ export default class {
                         title: "Stats Discovered!",
                         text: `Total servers amount: ${stats.length}\nTotal members amount: ${totalMembersCount}\nTotal members listenning: ${totalListenningCount}`,
                         type: DefaultMessageTypes.info,
-                    }
+                        fields: serverFields
+                    };
                     
-                    statsMessage.fields = serverFields;
-
                     return statsMessage;
                 }
                 else {
@@ -281,13 +261,14 @@ export default class {
 
         return  {
             title: `Unknown command.`,
-            text:` Unknown command ${args[0]}\nUse \"${this.prefix} help\" to get help.`,
+            text:` Unknown command \"${args[0]}\"\nUse \"${this.prefix} help\" to get help.`,
             type: DefaultMessageTypes.error
         }
         
     }
 
 
+    // Get command arguments from message
     parseArguments(command: string): string[] {
 
         // removing prefix for commands.
@@ -295,7 +276,6 @@ export default class {
 
         return command.split(" ");
     }
-
 
     private generateEmbed(data: CommandExitMessage): MessageEmbed {
         let embed = new MessageEmbed({
@@ -310,6 +290,7 @@ export default class {
         return embed;
     }
 
+    // Create Embeds from exit messages
     private createEmbeds(data: CommandExitMessage[] | CommandExitMessage): MessageEmbed[] {
 
         let embeds: MessageEmbed[] = [];
@@ -325,8 +306,8 @@ export default class {
 
         return embeds;
     }
-       
 
+    // Check if message contains a command and try to execute this command.
     async parse(msg: Message): Promise<boolean> {
 
         let command = msg.content;

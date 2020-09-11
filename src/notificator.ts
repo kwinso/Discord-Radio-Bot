@@ -21,7 +21,13 @@ export default class {
             });
 
             notificationEmbed.setColor("#14AACC");
-            notificationEmbed.setImage(song.image);
+
+            let imageRegex = new RegExp(/(\.png|.jpeg|.jpg|.gif)$/i);
+
+            
+            if (song.image && imageRegex.test(song.image)) {
+                notificationEmbed.setThumbnail(song.image);
+            }
 
             if (song.album && song.album != "") {
                 notificationEmbed.addField(`Album:`, song.album, false);

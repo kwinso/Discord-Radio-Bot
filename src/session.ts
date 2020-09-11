@@ -6,7 +6,7 @@ import { VoiceChannel, StreamDispatcher } from "discord.js";
 export default class {
     public guildId: string;
     public readonly channel: VoiceChannel;
-    private volume: number = 1;
+    private volume: number = 0.75;
     private stream!: StreamDispatcher;
 
     constructor(guild: string, channel: VoiceChannel) {
@@ -28,6 +28,8 @@ export default class {
             console.log(e);
         }
     }
+
+    getVolume() { return this.volume };
 
     updateVolume(vol: number) {
         if (vol > 1) vol = 1;
