@@ -1,9 +1,8 @@
 // * This class pepresents every channel where bot is playing now
 
+import { VoiceChannel, StreamDispatcher } from "discord.js";
 
 // TODO: Error Handling
-import { Guild, VoiceChannel, StreamDispatcher } from "discord.js";
-
 export default class {
     public guildId: string;
     public readonly channel: VoiceChannel;
@@ -16,19 +15,18 @@ export default class {
 
         this.channel.join().then(connetion => {
             // @ts-ignore
-            this.stream = connetion.play(process.env.live_file, { volume: this.volume });
+            this.stream = connetion.play(process.env.stream_url, { volume: this.volume });
         });
     }
 
-
-    toggleMute() {
-        if (!this.stream.paused) this.stream.pause();
-        else this.stream.resume();
-    }
-
     stop() {
-        this.stream.end();
-        this.channel.leave();
+        try {
+            this.stream.end();
+            this.channel.leave();            
+        } catch (e) {
+            console.log("Error While Stopping the steam.");
+            console.log(e);
+        }
     }
 
     updateVolume(vol: number) {
@@ -36,6 +34,11 @@ export default class {
 
         this.volume = vol;
 
-        this.stream?.setVolume(this.volume);
+        try {
+            this.stream?.setVolume(this.volume);
+        } catch (e) {
+            console.log("Failed to set volume");
+            console.log(e);
+        }
     }
 }
