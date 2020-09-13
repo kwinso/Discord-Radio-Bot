@@ -6,6 +6,7 @@ import DefaultMessageTypes from "./types/defaultMessageTypes";
 import CommandExitMessage from "./types/commandExitMessage";
 import { commands } from "./help";
 
+
 const helpMessage: CommandExitMessage = {
     type: DefaultMessageTypes.info,
     title: "Bot Help",
@@ -156,7 +157,8 @@ export default class {
                 }
             }
             // Leave the channel.
-            case "leave": {
+            case "leave":
+            case "l": {
                 this.stopSession(msg.member.guild.id);
 
                 return  {
@@ -235,14 +237,14 @@ export default class {
 
                         serverFields.push({
                             name: `Server: ${server.name}`,
-                            value: `Region: ${server.region}\nMembers: ${server.membersCount}\nMembers listenning: ${server.membersListenning}\n`,
+                            value: `Region: ${server.region}\n👨 Members: ${server.membersCount}\n🎧 Members listenning: ${server.membersListenning}\n`,
                             inline: false
                         });
                     }
 
                     let statsMessage: CommandExitMessage = {
                         title: "Stats Discovered!",
-                        text: `Total servers amount: ${stats.length}\nTotal members amount: ${totalMembersCount}\nTotal members listenning: ${totalListenningCount}`,
+                        text: `Total servers amount: ${stats.length}\n👨 Total members amount: ${totalMembersCount}\n🎧 Total members listenning: ${totalListenningCount}`,
                         type: DefaultMessageTypes.info,
                         fields: serverFields
                     };

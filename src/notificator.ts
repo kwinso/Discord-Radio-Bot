@@ -24,8 +24,8 @@ export default class {
 
             let imageRegex = new RegExp(/(\.png|.jpeg|.jpg|.gif)$/i);
 
-            
             if (song.image && imageRegex.test(song.image)) {
+                
                 notificationEmbed.setThumbnail(song.image);
             }
 
@@ -40,8 +40,8 @@ export default class {
             this.lastSongTime = song.time;
 
             let message = await this.notificationsChannel.send(notificationEmbed);
-            await message.react("👍");
-            await message.react("👎");
+            message.react("👍");
+            message.react("👎");
         }
     }
     // Watch for changes
@@ -60,7 +60,7 @@ export default class {
 
             const currentSong = response.data.data[0][0]; // Get last song in list
             
-            await setTimeout(async () => await this.sendNotification(currentSong), 1000 * 10);
+            await setTimeout(async () => await this.sendNotification(currentSong), 1000 * 5);
         }
     }
 }
