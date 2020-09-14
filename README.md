@@ -13,7 +13,7 @@ $ npm install && npm run build
 
 Then create `.env` file.  
 Write this:
-```
+```env
 token="<discrod.bot.token>"
 preifx="<!prefix_for_bot>"
 # Url where you streaming your music
