@@ -9,8 +9,6 @@ $ git clone https://github.com/uwumouse/Discord-Radio-Bot.git
 $ cd DiscordRadioBot
 
 $ npm install && npm run build
-
-$ node radio.build/bot.js
 ```
 
 Then create `.env` file.  
@@ -28,5 +26,5 @@ notifications_channel="id of channel where bot will be sending notifications abo
 
 ## Start bot
 ```bash
-$ node bot.js
+$ node radio.build/bot.js
 ```
