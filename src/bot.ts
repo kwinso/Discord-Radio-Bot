@@ -64,7 +64,10 @@ client.on('ready', async () => {
 
 
 client.on('message', async (msg: any) => {
-    commands.parse(msg);
+    try {
+        commands.parse(msg);
+    } catch {
+    }
 });
 
 client.login(token);

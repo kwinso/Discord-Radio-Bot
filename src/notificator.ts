@@ -2,7 +2,7 @@
 import axios from "axios";
 import { TextChannel, MessageEmbed } from "discord.js";
 
-const songsInfoUri = "http://aska.ru-hoster.com:2199/external/rpc.php?m=recenttracks.get&username=onf&charset=&since=0&mountpoint=&rid=onf&limit=8&_=1599816324170"
+const songsInfoUri = "http://aska.ru-hoster.com:2199/external/rpc.php?m=recenttracks.get&username=onf&charset=&since=0&mountpoint=&rid=onf&limit=3&_=1599816324170"
 
 export default class {
 
@@ -17,7 +17,7 @@ export default class {
         if (this.lastSongTime != song.time) {
 
             let notificationEmbed: MessageEmbed = new MessageEmbed({
-                title: `Song Playing: ${song.title}`,
+                title: `🔔 Song Playing: ${song.title}`,
             });
 
             notificationEmbed.setColor("#14AACC");
@@ -30,11 +30,11 @@ export default class {
             }
 
             if (song.album && song.album != "") {
-                notificationEmbed.addField(`Album:`, song.album, false);
+                notificationEmbed.addField(`💽 Album:`, song.album, false);
             }
 
             if (song.artist) {
-                notificationEmbed.addField(`By:`, song.artist, false);
+                notificationEmbed.addField(`©️ By:`, song.artist, false);
 
             }
             this.lastSongTime = song.time;
